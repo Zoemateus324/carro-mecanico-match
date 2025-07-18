@@ -13,11 +13,12 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 font-bold text-xl">
-            <div className="p-2 bg-gradient-primary rounded-lg">
-              <Car className="h-6 w-6 text-primary-foreground" />
+            <div className="p-2 bg-orange-600 rounded-full text-white w-[45px] h-[45px] items-center justify-center flex">
+              
+               SOS
             </div>
-            <span className="bg-gradient-hero bg-clip-text text-transparent">
-              MecânicoMatch
+            <span className="bg-black bg-clip-text text-transparent">
+              Mecânicos
             </span>
           </Link>
 
@@ -43,8 +44,9 @@ const Header = () => {
               Entrar
             </Button>
             <Button 
-              variant="hero" 
+              variant="outline" 
               onClick={() => navigate("/auth")}
+              className="bg-orange-600 text-white"
             >
               Começar Agora
             </Button>

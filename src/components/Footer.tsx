@@ -9,10 +9,10 @@ const Footer = () => {
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="p-2 bg-gradient-primary rounded-lg">
-                <Car className="h-6 w-6 text-primary-foreground" />
+              <div className="p-2 bg-orange-600 text-white flex items-center jusfity-center w-[45px] h-[45px] rounded-full font-bold">
+                SOS
               </div>
-              <span className="font-bold text-xl text-background">MecânicoMatch</span>
+              <span className="font-bold text-xl text-background">Mecânicos</span>
             </div>
             <p className="text-background/80 leading-relaxed">
               Conectando clientes com os melhores mecânicos da região. 
@@ -61,11 +61,11 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-background/60" />
-                <span className="text-background/80">contato@mecanicomatch.com</span>
+                <span className="text-background/80">contato@sosmecanicos.com.br</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-background/60" />
-                <span className="text-background/80">(11) 99999-9999</span>
+                <span className="text-background/80">(11) 95150-5824</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-background/60" />
@@ -78,7 +78,7 @@ const Footer = () => {
         <div className="border-t border-background/20 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-background/60 text-sm">
-              © 2024 MecânicoMatch. Todos os direitos reservados.
+              © 2025 SOS Mecânicos. Todos os direitos reservados.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link to="/termos" className="text-background/60 hover:text-background text-sm transition-colors">

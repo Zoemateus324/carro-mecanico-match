@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Car, Plus, Settings, LogOut, Crown, CheckCircle, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCallback } from "react";
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -16,11 +17,12 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    checkUser();
-  }, []);
 
-  const checkUser = async () => {
+
+
+
+
+  const checkUser = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -35,7 +37,13 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    checkUser();
+  }, [checkUser]);
+  
+
 
   const checkSubscription = async () => {
     try {
@@ -132,11 +140,11 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-primary rounded-lg">
-                <Car className="h-6 w-6 text-primary-foreground" />
+              <div className="p-2 bg-orange-600 rounded-full w-[45px] h-[45px] flex justify-center items-center text-white font-bold">
+                SOS
               </div>
               <div>
-                <h1 className="font-bold text-xl">MecânicoMatch</h1>
+                <h1 className="font-bold text-xl">Mecânicos</h1>
                 <p className="text-sm text-muted-foreground">Dashboard</p>
               </div>
             </div>

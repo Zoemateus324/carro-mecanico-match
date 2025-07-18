@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Car, User, Wrench, Mail, Lock, AlertCircle } from "lucide-react";
+import {  User, Wrench, Mail, Lock, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -48,7 +48,7 @@ const Auth = () => {
           }
         }
       });
-
+console.log({ email, password, userType });
       if (error) throw error;
 
       toast({
@@ -88,11 +88,11 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="p-3 bg-gradient-primary rounded-lg">
-              <Car className="h-8 w-8 text-primary-foreground" />
+            <div className="p-3 bg-orange-600 text-white justify-center items-center flex font-bold rounded-full h-[45px] w-[45px]">
+             SOS
             </div>
-            <span className="font-bold text-2xl bg-gradient-hero bg-clip-text text-transparent">
-              MecânicoMatch
+            <span className="font-bold text-2xl bg-black bg-clip-text text-transparent">
+              Mecânicos
             </span>
           </div>
           <p className="text-muted-foreground">

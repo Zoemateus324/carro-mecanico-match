@@ -37,14 +37,14 @@ serve(async (req) => {
     if (plan === "basico") {
       priceData = {
         currency: "brl",
-        product_data: { name: "Plano Básico - MecânicoMatch" },
+        product_data: { name: "Plano Básico - SOS Mecânicos" },
         unit_amount: 1990, // R$ 19,90
         recurring: { interval: "month" },
       };
     } else if (plan === "premium") {
       priceData = {
         currency: "brl",
-        product_data: { name: "Plano Premium - MecânicoMatch" },
+        product_data: { name: "Plano Premium - SOS Mecânicos" },
         unit_amount: 4990, // R$ 49,90
         recurring: { interval: "month" },
       };
