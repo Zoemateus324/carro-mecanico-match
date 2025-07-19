@@ -177,7 +177,7 @@ export type Database = {
           marca: string | null
           modelo: string | null
           placa: string | null
-          "tipo-veiculo": Database["public"]["Enums"]["tipo"] | null
+          "tipo_veiculo": Database["public"]["Enums"]["tipo"] | null
           user_id: string | null
         }
         Insert: {
@@ -191,7 +191,7 @@ export type Database = {
           marca?: string | null
           modelo?: string | null
           placa?: string | null
-          "tipo-veiculo"?: Database["public"]["Enums"]["tipo"] | null
+          "tipo_veiculo"?: Database["public"]["Enums"]["tipo"] | null
           user_id?: string | null
         }
         Update: {
