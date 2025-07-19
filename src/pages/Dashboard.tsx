@@ -11,6 +11,7 @@ import { useCallback } from "react";
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState(null);
   const [limits, setLimits] = useState(null);
@@ -30,6 +31,23 @@ const Dashboard = () => {
         return;
       }
       setUser(session.user);
+      
+      // Buscar perfil do usuário
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+      
+      setProfile(profileData);
+
+      // Verificar se é mecânico e redirecionar
+      if (profileData?.conta === "Mecanico") {
+        navigate("/mechanic-dashboard");
+        return;
+      }
+
+      // Só verificar assinatura se for cliente
       await checkSubscription();
       await checkUserLimits();
     } catch (error) {
@@ -41,7 +59,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     checkUser();
-  }, [checkUser]);
+  }, []);
   
 
 
@@ -218,7 +236,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Solicitações</h2>
                   <Button 
-                    onClick={() => navigate("/requests/new")}
+                    onClick={() => navigate("/vehicles/requests")}
                     disabled={limits && !limits.pode_fazer_solicitacao}
                   >
                     <Plus className="h-4 w-4 mr-2" />

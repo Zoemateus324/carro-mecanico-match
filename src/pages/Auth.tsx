@@ -44,7 +44,8 @@ const Auth = () => {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            user_type: userType
+            user_type: userType,
+            nome: email.split('@')[0] // Nome baseado no email como fallback
           }
         }
       });
