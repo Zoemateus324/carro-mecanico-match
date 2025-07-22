@@ -10,6 +10,9 @@ import VehicleAdd from "./pages/VehicleAdd";
 import VehicleRequests from "./pages/VehicleRequests";
 import MechanicDashboard from "./pages/MechanicDashboard";
 import NotFound from "./pages/NotFound";
+import ComoFunciona from "./pages/ComoFunciona";
+import ParaMecanicos from "./pages/ParaMecanicos";
+import SobreNos from "./pages/SobreNos";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +24,10 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/como-funciona" element={<ComoFunciona />} />
+          <Route path="/para-mecanicos" element={<ParaMecanicos />} />
+          <Route path="/sobre-nos" element={<SobreNos />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mechanic-dashboard" element={<MechanicDashboard />} />

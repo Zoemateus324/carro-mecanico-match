@@ -15,7 +15,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [userType, setUserType] = useState<"Cliente" | "Mecanico">("Cliente");
+  const [userType, setUserType] = useState<"cliente" | "mecanico">("cliente");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -30,37 +30,34 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
+// cria a conta do usuário com base no tipo selecionado
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const redirectUrl = `${window.location.origin}/dashboard`;
-      
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            user_type: userType,
-            nome: email.split('@')[0] // Nome baseado no email como fallback
-          }
-        }
       });
-console.log({ email, password, userType });
+
       if (error) throw error;
 
+      // Redirect to dashboard or show success message
       toast({
         title: "Conta criada com sucesso!",
-        description: "Verifique seu email para confirmar sua conta.",
+        description: "Você pode agora entrar na sua conta.",
+        variant: "default",
       });
+      navigate("/auth");
     } catch (error: any) {
       setError(error.message);
     } finally {
       setLoading(false);
     }
+   
+    // Aqui você pode salvar o tipo de usuário no banco de
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -171,8 +168,8 @@ console.log({ email, password, userType });
                     <div className="grid grid-cols-2 gap-2">
                       <Button
                         type="button"
-                        variant={userType === "Cliente" ? "default" : "outline"}
-                        onClick={() => setUserType("Cliente")}
+                        variant={userType === "cliente" ? "default" : "outline"}
+                        onClick={() => setUserType("cliente")}
                         className="justify-start"
                       >
                         <User className="mr-2 h-4 w-4" />
@@ -180,8 +177,8 @@ console.log({ email, password, userType });
                       </Button>
                       <Button
                         type="button"
-                        variant={userType === "Mecanico" ? "default" : "outline"}
-                        onClick={() => setUserType("Mecanico")}
+                        variant={userType === "mecanico" ? "default" : "outline"}
+                        onClick={() => setUserType("mecanico")}
                         className="justify-start"
                       >
                         <Wrench className="mr-2 h-4 w-4" />

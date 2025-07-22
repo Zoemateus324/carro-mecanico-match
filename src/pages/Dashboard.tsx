@@ -248,7 +248,8 @@ const Dashboard = () => {
                         </div>
                         <p className="text-sm text-muted-foreground">Placa: {vehicle.placa}</p>
                         <div className="flex gap-2 mt-4">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/vehicles/edit/${vehicle.id}`)}>Editar</Button>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/vehicles/edit/${vehicle.id}`)}>
+                          Editar</Button>
                           <Button variant="destructive" size="sm" onClick={() => handleDelete(vehicle.id)}>Excluir</Button>
                         </div>
                       </CardContent>
