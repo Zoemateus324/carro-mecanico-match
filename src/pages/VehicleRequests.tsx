@@ -82,25 +82,50 @@ const VehicleRequests = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Usuário não autenticado");
 
-      // Map formData.tipoServico to the allowed enum values
-      const tipoServicoMap: Record<string, "Guincho" | "Mecânica Geral" | "Elétrica" | "Pneus" | "Bateria" | "Combustível" | "Chaveiro" | "Outros" | "Revisão" | "Troca de óleo" | "Freios" | "Suspensão" | "Motor" | "Transmissão" | "Ar condicionado" | "Sistema elétrico"> = {
-        "guincho": "Guincho",
-        "mecanica-geral": "Mecânica Geral",
-        "eletrica": "Elétrica",
+      // Map formData.tipoServico to the allowed enum values (only those present in your Supabase enum)
+      const tipoServicoMap: Record<string, "Revisão" | "Troca de óleo" | "Freios" | "Suspensão" | "Motor" | "Transmissão" | "Ar condicionado" | "Sistema elétrico" | "Pneus" | "Outros"> = {
+        "revisao": "Revisão",
+        "troca-oleo": "Troca de óleo",
+        "freios": "Freios",
+        "suspensao": "Suspensão",
+        "motor": "Motor",
+        "transmissao": "Transmissão",
+        "ar-condicionado": "Ar condicionado",
+        "sistema-eletrico": "Sistema elétrico",
         "pneu": "Pneus",
-        "bateria": "Bateria",
-        "combustivel": "Combustível",
-        "chaveiro": "Chaveiro",
         "outros": "Outros"
       };
 
-      const { error } = await supabase.from("solicitacoes").insert({
-        usuario: session.user.id,
-        veiculo: parseInt(formData.veiculo),
-        "tipo-servico": tipoServicoMap[formData.tipoServico] || "Outros",
-        "descricao-solicitacao": formData.descricao,
-        ServiceStatus: "pendente"
-      });
+      const veiculoId = parseInt(formData.veiculo);
+
+if (isNaN(veiculoId) || !formData.descricao || !formData.tipoServico) {
+  toast({
+    title: "Campos obrigatórios",
+    description: "Preencha todos os campos obrigatórios",
+    variant: "destructive",
+  });
+  return;
+}
+
+const { error } = await supabase.from("solicitacoes")
+  .insert({
+    usuario: session.user.id,
+    veiculo: parseInt(formData.veiculo),
+    tipo_servico: tipoServicoMap[formData.tipoServico] || "Outros",
+    descricao_solicitacao: formData.descricao,
+    ServiceStatus: "pendente"
+  });
+
+if (error) {
+  console.error("Erro ao salvar solicitação:", error);
+  toast({
+    title: "Erro",
+    description: "Erro ao enviar solicitação.",
+    variant: "destructive",
+  });
+  return;
+}
+
 
       if (error) throw error;
 
@@ -205,14 +230,18 @@ const VehicleRequests = () => {
                         <SelectValue placeholder="Selecione o tipo de serviço" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="guincho">Guincho</SelectItem>
-                        <SelectItem value="mecanica-geral">Mecânica Geral</SelectItem>
-                        <SelectItem value="eletrica">Elétrica</SelectItem>
-                        <SelectItem value="pneu">Pneu</SelectItem>
-                        <SelectItem value="bateria">Bateria</SelectItem>
-                        <SelectItem value="combustivel">Combustível</SelectItem>
-                        <SelectItem value="chaveiro">Chaveiro</SelectItem>
+                        <SelectItem value="revisao">Revisão</SelectItem>
+                        <SelectItem value="troca-oleo">Troca de óleo</SelectItem>
+                        <SelectItem value="freios">Freios</SelectItem>
+                        <SelectItem value="suspensao">Suspensão</SelectItem>
+                        <SelectItem value="motor">Motor</SelectItem>
+                        <SelectItem value="transmissao">Transmissão</SelectItem>
+                        <SelectItem value="ar-condicionado">Ar condicionado</SelectItem>
+                        <SelectItem value="sistema-eletrico">Sistema elétrico</SelectItem>
+                        <SelectItem value="pneu">Pneus</SelectItem>
                         <SelectItem value="outros">Outros</SelectItem>
+                        <SelectItem value="chaveiro">Chaveiro</SelectItem>
+                        
                       </SelectContent>
                     </Select>
                   </div>

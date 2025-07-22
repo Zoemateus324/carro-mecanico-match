@@ -63,7 +63,7 @@ const MechanicDashboard = () => {
 
       // Verificar se é mecânico
       if (profileData?.conta !== "Mecanico") {
-        navigate("/dashboard"); // Redirecionar para dashboard do cliente
+        navigate("/mechanic-dashboard"); // Redirecionar para dashboard do cliente
         return;
       }
 

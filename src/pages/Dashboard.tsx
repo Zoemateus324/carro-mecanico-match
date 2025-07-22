@@ -8,7 +8,7 @@ import { Car, Plus, Settings, LogOut, Crown, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
-import { User } from "@supabase/supabase-js";
+
 
 
 
@@ -25,11 +25,12 @@ type Subscription = {
   subscription_end?: string;
 };
 
+
 type UserProfile = {
   id: string;
   email: string;
   nome: string;
-  conta: "Cliente" | "Mecanico";
+  conta: "Cliente" | "Mecanico" | "Guincho" | "Seguradora";
   created_at: string;
   updated_at: string;
 };
@@ -55,6 +56,7 @@ type Vehicle = {
 type VehicleRequest = {
   id: number;
   user_id: string;
+  usuario:string;
   vehicle_id: number;
   service_type: string;
   status: "Pendente" | "Em Andamento" | "Concluído"
@@ -66,7 +68,7 @@ type Profile = {
   id: string;
   nome: string;
   email: string;
-  conta: "Cliente" | "Mecanico";
+  conta: "Cliente" | "Mecanico" | "Guincho" | "Seguradora";
   created_at: string;
   updated_at: string;
 };
@@ -77,24 +79,7 @@ type UserSession = {
   subscription: SubscriptionResponse | null;
   vehicles: VehicleRow[];
 };
-
-type UserLimits = {
-  max_vehicles: number;
-  max_requests: number;
-  vehicles_used: number;
-  requests_used: number;
-  can_add_vehicle: boolean;
-  can_make_request: boolean;
-};
-type UserLimitsResponse = {
-  plan: string;
-  max_vehicles: number;
-  max_requests: number;
-  vehicles_used: number;
-  requests_used: number;
-};
-
-type Limits = {
+type limits = {
   plano: string;
   max_veiculos: number;
   max_solicitacoes: number;
@@ -104,17 +89,52 @@ type Limits = {
   pode_fazer_solicitacao: boolean;
 };
 
+type UserLimits = {
+  max_vehicles: number;
+  max_requests: number;
+  vehicles_used: number;
+  requests_used: number;
+  can_add_vehicle: boolean;
+  can_make_request: boolean;
+};
+
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<SubscriptionResponse | null>(null);
-  const [limits, setLimits] = useState<Limits | null>(null);
   const [vehicles, setVehicles] = useState<Partial<VehicleRow>[]>([]);
+  const [solicitacoes, setSolicitacoes] = useState<VehicleRequest[]>([]);
 
   const navigate = useNavigate();
   const { toast } = useToast();
 
+
+
+
+  
+const fetchSolicitacoes = async (userId: string, setSolicitacoes: React.Dispatch<React.SetStateAction<VehicleRequest[]>>) => {
+  try {
+    const { data: solicitacoesData, error } = await supabase
+      .from("solicitacoes")
+      .select("*")
+      .eq("usuario", userId) as unknown as { data: any[]; error: any };
+    if (error) throw error;
+    // Map raw data to VehicleRequest type
+    const mapped = (solicitacoesData || []).map((item) => ({
+      id: item.id,
+      user_id: item.user_id ?? item.usuario,
+      vehicle_id: item.vehicle_id ?? item.veiculo,
+      service_type: item.service_type ?? item["tipo-servico"],
+      status: item.status ?? item.ServiceStatus,
+      created_at: item.created_at,
+      updated_at: item.updated_at ?? "",
+    })) as VehicleRequest[];
+    setSolicitacoes(mapped);
+  } catch (error) {
+    console.error("Erro ao buscar solicitações:", error);
+  }
+};
   const checkUserLimits = useCallback(() => {
 
     const maxVeiculos = 1;
@@ -128,7 +148,7 @@ const Dashboard = () => {
     pode_adicionar_veiculo: vehicles.length < maxVeiculos,
     pode_fazer_solicitacao: true // ou coloque lógica de contagem aqui
   };
-    setLimits(limitsData);
+    
   }, [vehicles, subscription]);
 
 
@@ -140,8 +160,6 @@ const Dashboard = () => {
         navigate("/auth");
         return;
       }
-      setUser(session.user);
-
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
@@ -153,16 +171,30 @@ const Dashboard = () => {
         navigate("/mechanic-dashboard");
         return;
       }
-
       await checkSubscription();
       await checkUserLimits();
       await fetchVehicles(session.user.id);
+      await fetchSolicitacoes(session.user.id, setSolicitacoes);
 
     } catch (error) {
       console.error("Error checking user:", error);
     } finally {
       setLoading(false);
     }
+  }, [navigate, checkUserLimits]);
+  useEffect(() => {
+    const runCheckUser = async () => {
+      try {
+        await checkSubscription();
+        await checkUserLimits();
+       
+      } catch (error) {
+        console.error("Error checking user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    runCheckUser();
   }, [navigate, checkUserLimits]);
 
   useEffect(() => {
@@ -299,19 +331,19 @@ const Dashboard = () => {
             <TabsContent value="vehicles" className="space-y-4">
               <div className="flex justify-between">
                 <h2 className="text-2xl font-bold">Meus Veículos</h2>
-                <Button onClick={() => navigate("/vehicles/add")} disabled={!limits?.pode_adicionar_veiculo}>
+                <Button onClick={() => navigate("/vehicles/add")} >
                   <Plus className="h-4 w-4 mr-2" /> Adicionar Veículo
                 </Button>
               </div>
 
-              {limits && (
+           
                 <Card><CardContent>
-                  <p className="text-sm">Veículos: {limits.veiculos_usados} / {limits.max_veiculos}</p>
+                  <p className="text-sm">Veículos: </p>
                   <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: `${(limits.veiculos_usados / limits.max_veiculos) * 50}%` }} />
+                    <div className="bg-primary h-2 rounded-full" style={{ }} />
                   </div>
                 </CardContent></Card>
-              )}
+            
 
               {vehicles.length === 0 ? (
                 <Card><CardContent><p className="text-center text-muted">Nenhum veículo cadastrado ainda.</p></CardContent></Card>
@@ -343,24 +375,42 @@ const Dashboard = () => {
             <TabsContent value="requests" className="space-y-4">
               <div className="flex justify-between">
                 <h2 className="text-2xl font-bold">Minhas Solicitações</h2>
-                <Button onClick={() => navigate("/vehicles/requests")} disabled={!limits?.pode_fazer_solicitacao}>
+                <Button onClick={() => navigate("/vehicles/requests")} >
                   <Plus className="h-4 w-4 mr-2" /> Solicitar Serviço
                 </Button>
               </div>
 
-              {limits && (
-                <Card><CardContent>
-                  <p className="text-sm">Solicitações: {limits.solicitacoes_usadas} / {limits.max_solicitacoes}</p>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: `${(limits.solicitacoes_usadas / limits.max_solicitacoes) * 50}%` }} />
-                  </div>
-                </CardContent></Card>
-              )}
-
-              {/* Aqui você pode adicionar a lista de solicitações feitas pelo usuário */}
-              <Card><CardContent>
-                <p className="text-center text-muted">Nenhuma solicitação feita ainda.</p>
-              </CardContent></Card>
+              
+              <Card className="bg-gradient-card shadow-elegant border-0">
+                <CardHeader>
+                  <CardTitle className="text-center">Solicitações Recentes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {solicitacoes.length === 0 ? (
+                    <p className="text-center text-muted">Nenhuma solicitação feita ainda.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {solicitacoes.map((request) => (
+                        <li key={request.id} className="border p-3 rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h3 className="font-semibold">{request.service_type}</h3>
+                              <p className="text-sm text-muted-foreground">Status: {request.status}</p>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => navigate(`/vehicles/request/${request.id}`)}>
+                              Ver Detalhes
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+           
+            
+            
+            
             </TabsContent>
           <TabsContent value="profile" className="space-y-4">
             <div className="flex items-center space-x-4">
