@@ -16,6 +16,84 @@ import { User } from "@supabase/supabase-js";
 type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type SubscriptionResponse = { subscription_tier: string; subscribed: boolean; subscription_end?: string };
+
+type Subscription = {
+  id: string;
+  user_id: string;
+  subscription_tier: string;
+  subscribed: boolean;
+  subscription_end?: string;
+};
+
+type UserProfile = {
+  id: string;
+  email: string;
+  nome: string;
+  conta: "Cliente" | "Mecanico";
+  created_at: string;
+  updated_at: string;
+};
+
+type User = {
+  id: string;
+  email: string;
+  profile: UserProfile;
+};
+
+
+type Vehicle = {
+  id: number;
+  user_id: string;
+  marca: string;
+  modelo: string;
+  ano: number;
+  placa: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type VehicleRequest = {
+  id: number;
+  user_id: string;
+  vehicle_id: number;
+  service_type: string;
+  status: "Pendente" | "Em Andamento" | "Concluído"
+  created_at: string;
+  updated_at: string;
+};
+
+type Profile = {
+  id: string;
+  nome: string;
+  email: string;
+  conta: "Cliente" | "Mecanico";
+  created_at: string;
+  updated_at: string;
+};
+
+type UserSession = {
+  user: User | null;
+  profile: Profile | null;
+  subscription: SubscriptionResponse | null;
+  vehicles: VehicleRow[];
+};
+
+type UserLimits = {
+  max_vehicles: number;
+  max_requests: number;
+  vehicles_used: number;
+  requests_used: number;
+  can_add_vehicle: boolean;
+  can_make_request: boolean;
+};
+type UserLimitsResponse = {
+  plan: string;
+  max_vehicles: number;
+  max_requests: number;
+  vehicles_used: number;
+  requests_used: number;
+};
+
 type Limits = {
   plano: string;
   max_veiculos: number;
@@ -262,8 +340,62 @@ const Dashboard = () => {
               )}
             </TabsContent>
 
-            {/* Conteúdos de outras abas omitidos para brevidade */}
+            <TabsContent value="requests" className="space-y-4">
+              <div className="flex justify-between">
+                <h2 className="text-2xl font-bold">Minhas Solicitações</h2>
+                <Button onClick={() => navigate("/vehicles/requests")} disabled={!limits?.pode_fazer_solicitacao}>
+                  <Plus className="h-4 w-4 mr-2" /> Solicitar Serviço
+                </Button>
+              </div>
+
+              {limits && (
+                <Card><CardContent>
+                  <p className="text-sm">Solicitações: {limits.solicitacoes_usadas} / {limits.max_solicitacoes}</p>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div className="bg-primary h-2 rounded-full" style={{ width: `${(limits.solicitacoes_usadas / limits.max_solicitacoes) * 50}%` }} />
+                  </div>
+                </CardContent></Card>
+              )}
+
+              {/* Aqui você pode adicionar a lista de solicitações feitas pelo usuário */}
+              <Card><CardContent>
+                <p className="text-center text-muted">Nenhuma solicitação feita ainda.</p>
+              </CardContent></Card>
+            </TabsContent>
+          <TabsContent value="profile" className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <div className="p-2 bg-gradient-primary rounded-lg">
+                <Crown className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Meu Perfil</h2>
+                <p className="text-sm text-muted-foreground">Gerencie suas informações e preferências</p>
+              </div>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações do Perfil</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* Aqui você pode adicionar campos para editar o perfil do usuário */}
+                <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+                  Editar Perfil
+                </Button>
+              </CardContent>
+            </Card>
+
+            {profile && (
+              <Card><CardContent>
+                <p><strong>Nome:</strong> {profile.nome}</p>
+                <p><strong>Email:</strong> {user?.email}</p>
+                <p><strong>Tipo de Conta:</strong> {profile.conta}</p>
+              </CardContent></Card>
+            )}      
+          </TabsContent>
           </Tabs>
+
+
         </div>
 
         {/* Sidebar */}

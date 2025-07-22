@@ -33,43 +33,43 @@ const VehicleRequests = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    const checkLimitsAndVehicles = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          navigate("/auth");
+          return;
+        }
+
+        // Buscar veículos do usuário
+        const { data: vehiclesData } = await supabase
+          .from("vehicles")
+          .select("id, marca, modelo, ano, placa")
+          .eq("user_id", session.user.id);
+
+        setVehicles(vehiclesData || []);
+
+        // Verificar limites usando dados mock temporariamente
+        const mockData = {
+          max_solicitacoes: 3,
+          solicitacoes_usadas: 0,
+          pode_fazer_solicitacao: true
+        };
+        
+        if (!mockData.pode_fazer_solicitacao) {
+          setError(`Limite de solicitações atingido. Seu plano permite apenas ${mockData.max_solicitacoes} solicitação(ões) por mês.`);
+          setCanMakeRequest(false);
+        } else {
+          setCanMakeRequest(true);
+        }
+      } catch (error) {
+        console.error("Error checking limits:", error);
+        setError("Erro ao verificar limites do plano");
+      }
+    };
+
     checkLimitsAndVehicles();
-  }, []);
-
-  const checkLimitsAndVehicles = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/auth");
-        return;
-      }
-
-      // Buscar veículos do usuário
-      const { data: vehiclesData } = await supabase
-        .from("vehicles")
-        .select("id, marca, modelo, ano, placa")
-        .eq("user_id", session.user.id);
-
-      setVehicles(vehiclesData || []);
-
-      // Verificar limites usando dados mock temporariamente
-      const mockData = {
-        max_solicitacoes: 3,
-        solicitacoes_usadas: 0,
-        pode_fazer_solicitacao: true
-      };
-      
-      if (!mockData.pode_fazer_solicitacao) {
-        setError(`Limite de solicitações atingido. Seu plano permite apenas ${mockData.max_solicitacoes} solicitação(ões) por mês.`);
-        setCanMakeRequest(false);
-      } else {
-        setCanMakeRequest(true);
-      }
-    } catch (error) {
-      console.error("Error checking limits:", error);
-      setError("Erro ao verificar limites do plano");
-    }
-  };
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,10 +82,22 @@ const VehicleRequests = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Usuário não autenticado");
 
+      // Map formData.tipoServico to the allowed enum values
+      const tipoServicoMap: Record<string, "Guincho" | "Mecânica Geral" | "Elétrica" | "Pneus" | "Bateria" | "Combustível" | "Chaveiro" | "Outros" | "Revisão" | "Troca de óleo" | "Freios" | "Suspensão" | "Motor" | "Transmissão" | "Ar condicionado" | "Sistema elétrico"> = {
+        "guincho": "Guincho",
+        "mecanica-geral": "Mecânica Geral",
+        "eletrica": "Elétrica",
+        "pneu": "Pneus",
+        "bateria": "Bateria",
+        "combustivel": "Combustível",
+        "chaveiro": "Chaveiro",
+        "outros": "Outros"
+      };
+
       const { error } = await supabase.from("solicitacoes").insert({
         usuario: session.user.id,
         veiculo: parseInt(formData.veiculo),
-        "tipo-servico": formData.tipoServico as any,
+        "tipo-servico": tipoServicoMap[formData.tipoServico] || "Outros",
         "descricao-solicitacao": formData.descricao,
         ServiceStatus: "pendente"
       });
@@ -98,8 +110,12 @@ const VehicleRequests = () => {
       });
 
       navigate("/dashboard");
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Ocorreu um erro desconhecido.");
+      }
     } finally {
       setLoading(false);
     }
