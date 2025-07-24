@@ -8,6 +8,8 @@ import { Car, Plus, Settings, LogOut, Crown, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { useSubscription } from "@/hooks/useSubscription";
+import SubscriptionPlans from "@/components/SubscriptionPlans";
 
 
 
@@ -102,12 +104,12 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [subscription, setSubscription] = useState<SubscriptionResponse | null>(null);
   const [vehicles, setVehicles] = useState<Partial<VehicleRow>[]>([]);
   const [solicitacoes, setSolicitacoes] = useState<VehicleRequest[]>([]);
 
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { subscription, loading: subscriptionLoading, getCurrentPlan, isActive } = useSubscription();
 
 
 
@@ -185,7 +187,6 @@ const fetchSolicitacoes = async (userId: string, setSolicitacoes: React.Dispatch
   useEffect(() => {
     const runCheckUser = async () => {
       try {
-        await checkSubscription();
         await checkUserLimits();
        
       } catch (error) {
@@ -201,30 +202,6 @@ const fetchSolicitacoes = async (userId: string, setSolicitacoes: React.Dispatch
     checkUser();
   }, [checkUser]);
 
-  const checkSubscription = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      if (error) throw error;
-      setSubscription(data);
-    } catch (error) {
-      console.error("Error checking subscription:", error);
-    }
-  };
-  const handleUpgrade = async (plan: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
-        body: { plan }
-      });
-      if (error) throw error;
-      window.open(data.url, "_blank");
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao iniciar upgrade de plano.",
-        variant: "destructive",
-      });
-    }
-  };
 
 
 
@@ -277,18 +254,21 @@ const fetchSolicitacoes = async (userId: string, setSolicitacoes: React.Dispatch
 
   const getPlanColor = (plan: string) => {
     switch (plan) {
-      case "Gratis": return "secondary";
-      case "Basico": return "default";
-      case "Premium": return "destructive";
+      case "Free": return "secondary";
+      case "Standard": return "default";
+      case "Premium": return "default";
+      case "Ultimate": return "destructive";
       default: return "secondary";
     }
   };
 
-  if (loading) {
+  if (loading || subscriptionLoading) {
     return <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     </div>;
   }
+
+  const currentPlan = getCurrentPlan();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/50 to-background">
@@ -304,10 +284,10 @@ const fetchSolicitacoes = async (userId: string, setSolicitacoes: React.Dispatch
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          {subscription && (
-            <Badge variant={getPlanColor(subscription.subscription_tier)}>
-              {subscription.subscription_tier === "Gratis" ? "✨ " : subscription.subscription_tier === "Basico" ? "🚀 " : "👑 "}
-              {subscription.subscription_tier}
+          {currentPlan && (
+            <Badge variant={getPlanColor(currentPlan.name)}>
+              {currentPlan.name === "Free" ? "✨ " : currentPlan.name.includes("Standard") ? "🚀 " : currentPlan.name.includes("Premium") ? "⭐ " : "👑 "}
+              {currentPlan.name}
             </Badge>
           )}
           <Button variant="outline" size="sm" onClick={handleSignOut}>
@@ -450,107 +430,27 @@ const fetchSolicitacoes = async (userId: string, setSolicitacoes: React.Dispatch
 
         {/* Sidebar */}
         <div className="space-y-4">
-          <Card><CardHeader className="flex items-center"><Crown className="mr-2" /> <CardTitle>Plano Atual</CardTitle></CardHeader>
+          <Card>
+            <CardHeader className="flex items-center">
+              <Crown className="mr-2" /> 
+              <CardTitle>Current Plan</CardTitle>
+            </CardHeader>
             <CardContent>
-              {subscription && (
+              {currentPlan && (
                 <>
                   <div className="flex justify-between">
-                    <span className="font-medium">{subscription.subscription_tier}</span>
-                    <Badge variant={getPlanColor(subscription.subscription_tier)}>
-                      {subscription.subscribed ? "Ativo" : "Inativo"}
+                    <span className="font-medium">{currentPlan.name}</span>
+                    <Badge variant={getPlanColor(currentPlan.name)}>
+                      {isActive() ? "Active" : "Inactive"}
                     </Badge>
                   </div>
-                  {subscription.subscription_end && (
-                    <p className="text-sm">Renovação: {new Date(subscription.subscription_end).toLocaleDateString()}</p>
-                  )}
-                  {subscription.subscribed && (
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => supabase.functions.invoke("customer-portal")}>
-                      Gerenciar Assinatura
-                    </Button>
-                  )}
                 </>
               )}
             </CardContent>
           </Card>
 
-          {/* Planos disponíveis */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Planos Disponíveis</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Grátis</h4>
-                    <span className="text-sm font-bold">R$ 0/mês</span>
-                  </div>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                      1 veículo
-                    </div>
-                    <div className="flex items-center">
-                      <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                      3 solicitações/mês
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Básico</h4>
-                    <span className="text-sm font-bold">R$ 19,90/mês</span>
-                  </div>
-                  <div className="space-y-1 text-sm text-muted-foreground mb-3">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                      5 veículos
-                    </div>
-                    <div className="flex items-center">
-                      <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                      15 solicitações/mês
-                    </div>
-                  </div>
-                  {(!subscription?.subscribed || subscription?.subscription_tier === "Gratis") && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleUpgrade("basico")}
-                      className="w-full"
-                    >
-                      Assinar
-                    </Button>
-                  )}
-                </div>
-
-                <div className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Premium</h4>
-                    <span className="text-sm font-bold">R$ 49,90/mês</span>
-                  </div>
-                  <div className="space-y-1 text-sm text-muted-foreground mb-3">
-                    <div className="flex items-center">
-                      <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                      Veículos ilimitados
-                    </div>
-                    <div className="flex items-center">
-                      <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                      Solicitações ilimitadas
-                    </div>
-                  </div>
-                  {(!subscription?.subscribed || subscription?.subscription_tier !== "Premium") && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleUpgrade("premium")}
-                      className="w-full"
-                    >
-                      Assinar
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Subscription Plans */}
+          <SubscriptionPlans currentPlan={currentPlan.name} />
         </div>
       </div>
     </div>

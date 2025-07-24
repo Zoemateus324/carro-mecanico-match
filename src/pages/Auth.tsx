@@ -37,27 +37,39 @@ const Auth = () => {
     setError("");
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: undefined, // Disable email confirmation
+        }
       });
 
       if (error) throw error;
 
-      // Redirect to dashboard or show success message
+      // If user is immediately confirmed (email confirmation disabled)
+      if (data.user && !data.user.email_confirmed_at) {
+        // Auto-confirm the user since we disabled email confirmation
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (signInError) throw signInError;
+      }
+
       toast({
-        title: "Conta criada com sucesso!",
-        description: "Você pode agora entrar na sua conta.",
+        title: "Account created successfully!",
+        description: "Welcome to SOS Mecânicos!",
         variant: "default",
       });
-      navigate("/auth");
+      
+      navigate("/dashboard");
     } catch (error: any) {
       setError(error.message);
     } finally {
       setLoading(false);
     }
-   
-    // Aqui você pode salvar o tipo de usuário no banco de
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
