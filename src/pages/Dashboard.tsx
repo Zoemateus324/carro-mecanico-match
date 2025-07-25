@@ -156,12 +156,14 @@ const fetchSolicitacoes = async (userId: string, setSolicitacoes: React.Dispatch
 
   const checkUser = useCallback(async () => {
     try {
-      setLoading(false);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/auth");
         return;
       }
+
+      setUser(session.user);
+
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
@@ -169,11 +171,12 @@ const fetchSolicitacoes = async (userId: string, setSolicitacoes: React.Dispatch
         .single();
 
       setProfile(profileData);
+
       if (profileData?.conta === "Mecanico") {
         navigate("/mechanic-dashboard");
         return;
       }
-      await checkSubscription();
+
       await checkUserLimits();
       await fetchVehicles(session.user.id);
       await fetchSolicitacoes(session.user.id, setSolicitacoes);
@@ -183,19 +186,6 @@ const fetchSolicitacoes = async (userId: string, setSolicitacoes: React.Dispatch
     } finally {
       setLoading(false);
     }
-  }, [navigate, checkUserLimits]);
-  useEffect(() => {
-    const runCheckUser = async () => {
-      try {
-        await checkUserLimits();
-       
-      } catch (error) {
-        console.error("Error checking user:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    runCheckUser();
   }, [navigate, checkUserLimits]);
 
   useEffect(() => {
