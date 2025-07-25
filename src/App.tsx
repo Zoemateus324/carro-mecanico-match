@@ -14,6 +14,7 @@ import ComoFunciona from "./pages/ComoFunciona";
 import ParaMecanicos from "./pages/ParaMecanicos";
 import SobreNos from "./pages/SobreNos";
 
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/mechanic-dashboard" element={<MechanicDashboard />} />
           <Route path="/vehicles/add" element={<VehicleAdd />} />
           <Route path="/vehicles/requests" element={<VehicleRequests />} />
+          <Route path="api/hello-xano" element={<div>API Hello Test</div>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

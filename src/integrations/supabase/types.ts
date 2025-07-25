@@ -91,11 +91,11 @@ export type Database = {
       solicitacoes: {
         Row: {
           created_at: string
-          "descricao-solicitacao": string | null
+          descricao_solicitacao: string | null
           id: number
           ServiceStatus: Database["public"]["Enums"]["ServiceStatus"] | null
-          "status-orcamento": Database["public"]["Enums"]["QuoteStatus"] | null
-          "tipo-servico": Database["public"]["Enums"]["tipo-servico"] | null
+         status_orçamento: Database["public"]["Enums"]["QuoteStatus"] | null
+          tipo_servico: Database["public"]["Enums"]["tipo-servico"] | null
           usuario: string | null
           veiculo: number | null
         }
