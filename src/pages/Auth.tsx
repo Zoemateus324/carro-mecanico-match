@@ -37,98 +37,81 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
-  const createSubscription = async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id;
 
-    if (userId) {
-      const { error: subscriptionError } = await supabase
-        .from("subscribers")
-        .insert([
-          {
-            user_id: userId,
-            plano: "free",
-            status: "ativa",
-          },
-        ]);
 
-      if (subscriptionError) {
-        console.error("Erro ao criar assinatura:", subscriptionError.message);
-        toast({
-          title: "Conta criada, mas houve um erro ao ativar a assinatura.",
-          description: "Por favor, entre em contato com o suporte.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
+const handleSignUp = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  if (!nome || !sobrenome || !email || !password) {
+    setError("Por favor, preencha todos os campos obrigatórios.");
+    setLoading(false);
+    return;
+  }
 
-    if (!nome || !sobrenome || !email || !password) {
-      setError("Por favor, preencha todos os campos obrigatórios.");
-      setLoading(false);
-      return;
-    }
+  if (password.length < 6) {
+    setError("A senha deve ter pelo menos 6 caracteres.");
+    setLoading(false);
+    return;
+  }
 
-    if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres.");
-      setLoading(false);
-      return;
-    }
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    setError("Por favor, insira um email válido.");
+    setLoading(false);
+    return;
+  }
 
-    try {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            nome,
-            sobrenome,
-            telefone,
-            cpf_cnpj: cpfCnpj,
-            cep,
-            endereco,
-            cidade,
-            estado,
-            conta: userType === "cliente" ? "Cliente" : "Mecanico",
-          },
+  try {
+    // Cadastro do usuário
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          nome,
+          sobrenome,
+          telefone,
+          cpf_cnpj: cpfCnpj,
+          cep,
+          endereco,
+          cidade,
+          estado,
+          conta: userType === "cliente" ? "Cliente" : "Mecanico",
         },
-      });
+      },
+    });
 
-      if (signUpError) throw signUpError;
+    if (signUpError) throw new Error(`Erro no cadastro: ${signUpError.message}`);
 
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Login automático após cadastro
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    if (signInError) throw new Error(`Erro no login: ${signInError.message}`);
 
-      if (signInError) throw signInError;
-
-      await createSubscription();
-
-      toast({
-        title: "Conta criada com sucesso!",
-        description: "Bem-vindo ao SOS Mecânicos!",
-      });
-
-      navigate(userType === "mecanico" ? "/mechanic-dashboard" : "/dashboard");
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Erro desconhecido ao criar conta.");
-      }
-    } finally {
-      setLoading(false);
+    // Verifica a sessão
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      throw new Error("Não foi possível obter a sessão após o login.");
     }
-  };
 
+    toast({
+      title: "Conta criada com sucesso!",
+      description: "Bem-vindo ao SOS Mecânicos!",
+    });
+
+    navigate(userType === "mecanico" ? "/mechanic-dashboard" : "/dashboard");
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao criar conta.";
+    setError(errorMessage);
+    console.error("Erro no signup:", errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -168,13 +151,13 @@ const Auth = () => {
     }
   };
 
-   return (
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/50 to-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <div className="p-3 bg-orange-600 text-white justify-center items-center flex font-bold rounded-full h-[45px] w-[45px]">
-             SOS
+              SOS
             </div>
             <span className="font-bold text-2xl bg-black bg-clip-text text-transparent">
               Mecânicos
@@ -237,9 +220,9 @@ const Auth = () => {
                     </Alert>
                   )}
 
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
+                  <Button
+                    type="submit"
+                    className="w-full"
                     variant="hero"
                     disabled={loading}
                   >
@@ -412,9 +395,9 @@ const Auth = () => {
                     </Alert>
                   )}
 
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
+                  <Button
+                    type="submit"
+                    className="w-full"
                     variant="hero"
                     disabled={loading}
                   >
