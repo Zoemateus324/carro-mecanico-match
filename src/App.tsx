@@ -14,7 +14,7 @@ import ComoFunciona from "./pages/ComoFunciona";
 import ParaMecanicos from "./pages/ParaMecanicos";
 import SobreNos from "./pages/SobreNos";
 import Success from "./pages/Success";
-import { Analytics } from "@vercel/analytics/next"
+
 
 const queryClient = new QueryClient();
 
@@ -23,7 +23,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <Analytics/>
+
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
