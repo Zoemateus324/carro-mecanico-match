@@ -28,7 +28,6 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -38,13 +37,37 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
-  // Create user account based on selected type
+  const createSubscription = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (userId) {
+      const { error: subscriptionError } = await supabase
+        .from("subscribers")
+        .insert([
+          {
+            user_id: userId,
+            plano: "free",
+            status: "ativa",
+          },
+        ]);
+
+      if (subscriptionError) {
+        console.error("Erro ao criar assinatura:", subscriptionError.message);
+        toast({
+          title: "Conta criada, mas houve um erro ao ativar a assinatura.",
+          description: "Por favor, entre em contato com o suporte.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // Validate required fields
     if (!nome || !sobrenome || !email || !password) {
       setError("Por favor, preencha todos os campos obrigatórios.");
       setLoading(false);
@@ -58,11 +81,10 @@ const Auth = () => {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: undefined,
           data: {
             nome,
             sobrenome,
@@ -72,43 +94,40 @@ const Auth = () => {
             endereco,
             cidade,
             estado,
-            conta: userType === "cliente" ? "Cliente" : "Mecanico"
-          }
-        }
+            conta: userType === "cliente" ? "Cliente" : "Mecanico",
+          },
+        },
       });
 
-      if (error) throw error;
+      if (signUpError) throw signUpError;
 
-      // Wait a moment for the trigger to create the profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Sign in the user
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (signInError) throw signInError;
+
+      await createSubscription();
 
       toast({
         title: "Conta criada com sucesso!",
         description: "Bem-vindo ao SOS Mecânicos!",
-        variant: "default",
       });
-      
-      // Navigate based on user type
-      if (userType === "mecanico") {
-        navigate("/mechanic-dashboard");
+
+      navigate(userType === "mecanico" ? "/mechanic-dashboard" : "/dashboard");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
       } else {
-        navigate("/dashboard");
+        setError("Erro desconhecido ao criar conta.");
       }
-    } catch (error: any) {
-      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
-  
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,8 +142,8 @@ const Auth = () => {
 
       if (error) throw error;
 
-      // Check user type and navigate accordingly
       const { data: { session } } = await supabase.auth.getSession();
+
       if (session) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -138,14 +157,18 @@ const Auth = () => {
           navigate("/dashboard");
         }
       }
-    } catch (error: any) {
-      setError(error.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Erro desconhecido ao entrar.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  return (
+   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/50 to-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
