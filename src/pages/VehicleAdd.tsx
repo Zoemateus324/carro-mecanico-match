@@ -11,10 +11,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Database } from "@/types/supabase"; // ajuste o caminho conforme seu projeto
 
-type VehicleInsert = Database["public"]["Tables"]["vehicles"]["Insert"];
+interface VehicleFormData {
+  ano: string;
+  categoria: "Automóveis" | "Motocicletas" | "Caminhões" | "Ônibus";
+  combustivel: "gasolina" | "etanol" | "diesel" | "eletrico" | "hibrido";
+  cor: string;
+  marca: string;
+  modelo: string;
+  placa: string;
+  "tipo_veiculo": string;
+  user_id: string | null;
+  
+}
 
 const VehicleAdd = () => {
-  const [formData, setFormData] = useState<VehicleInsert>({
+  const [formData, setFormData] = useState<VehicleFormData>({
     ano: "",
     categoria: "Automóveis",
     combustivel: "gasolina",
@@ -22,9 +33,9 @@ const VehicleAdd = () => {
     marca: "",
     modelo: "",
     placa: "",
-    "tipo_veiculo": "carro",
+    "tipo_veiculo": "Hatch",
     user_id: null,
-    "foto-veiculo": null
+    
   });
 
   const [loading, setLoading] = useState(false);
@@ -65,7 +76,7 @@ const VehicleAdd = () => {
     checkLimits();
   }, [checkLimits]);
 
-  const handleChange = (field: keyof VehicleInsert, value: string) => {
+  const handleChange = (field: keyof VehicleFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -77,7 +88,21 @@ const VehicleAdd = () => {
     setError("");
 
     try {
-      const { error } = await supabase.from("vehicles").insert(formData);
+      // Map form data to database schema
+      const vehicleData = {
+        ano: formData.ano,
+        categoria: formData.categoria,
+        combustivel: formData.combustivel,
+        cor: formData.cor,
+        marca: formData.marca,
+        modelo: formData.modelo,
+        placa: formData.placa,
+        "tipo_veiculo": formData["tipo_veiculo"] as any,
+        user_id: formData.user_id,
+        
+      };
+
+      const { error } = await supabase.from("vehicles").insert(vehicleData);
       if (error) throw error;
 
       toast({
