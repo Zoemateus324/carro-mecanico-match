@@ -63,7 +63,7 @@ const handleSignUp = async (e: React.FormEvent) => {
   }
 
   try {
-    // Cadastro do usuário
+    console.log("Iniciando cadastro do usuário...");
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -82,7 +82,15 @@ const handleSignUp = async (e: React.FormEvent) => {
       },
     });
 
-    if (signUpError) throw new Error(`Erro no cadastro: ${signUpError.message}`);
+    if (signUpError) {
+      console.error("Erro no signUp:", signUpError);
+      throw new Error(`Erro no cadastro: ${signUpError.message}`);
+    }
+
+    console.log("Usuário cadastrado com sucesso, fazendo login...");
+
+    // Aguardar um momento para o trigger processar
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Login automático após cadastro
     const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -90,20 +98,90 @@ const handleSignUp = async (e: React.FormEvent) => {
       password,
     });
 
-    if (signInError) throw new Error(`Erro no login: ${signInError.message}`);
+    if (signInError) {
+      console.error("Erro no signIn:", signInError);
+      throw new Error(`Erro no login: ${signInError.message}`);
+    }
 
-    // Verifica a sessão
+    console.log("Login realizado com sucesso, verificando sessão...");
+
+    // Verifica a sessão e perfil
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !sessionData.session) {
+      console.error("Erro na sessão:", sessionError);
       throw new Error("Não foi possível obter a sessão após o login.");
     }
 
+    // Verificar se o perfil foi criado
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", sessionData.session.user.id)
+      .single();
+
+    if (profileError) {
+      console.error("Erro ao buscar perfil:", profileError);
+      // Se o perfil não foi criado automaticamente, criar manualmente
+      const { error: createProfileError } = await supabase
+        .from("profiles")
+        .insert({
+          id: sessionData.session.user.id,
+          email: email,
+          nome: nome,
+          sobrenome: sobrenome,
+          telefone: telefone,
+          "cpf/cnpj": cpfCnpj,
+          cep: cep,
+          endereco: endereco,
+          cidade: cidade,
+          estado: estado,
+          conta: userType === "cliente" ? "Cliente" : "Mecanico",
+        });
+
+      if (createProfileError) {
+        console.error("Erro ao criar perfil manualmente:", createProfileError);
+        throw new Error("Erro ao criar perfil do usuário.");
+      }
+    }
+
+    console.log("Perfil verificado/criado, verificando assinatura...");
+
+    // Verificar/criar assinatura gratuita
+    const { data: subscriptionData, error: subscriptionError } = await supabase
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", sessionData.session.user.id)
+      .single();
+
+    if (subscriptionError || !subscriptionData) {
+      console.log("Criando assinatura gratuita...");
+      const { error: createSubError } = await supabase
+        .from("user_subscriptions")
+        .insert({
+          user_id: sessionData.session.user.id,
+          plan_type: "gratuito",
+          status: "ativa",
+          max_vehicles: 1,
+          max_requests: 3,
+          vehicles_used: 0,
+          requests_used: 0,
+        });
+
+      if (createSubError) {
+        console.error("Erro ao criar assinatura:", createSubError);
+        // Não falhar por causa da assinatura, apenas logar o erro
+      }
+    }
     toast({
       title: "Conta criada com sucesso!",
       description: "Bem-vindo ao SOS Mecânicos!",
     });
 
-    navigate(userType === "mecanico" ? "/mechanic-dashboard" : "/dashboard");
+    // Navegar baseado no tipo de usuário
+    const targetRoute = userType === "mecanico" ? "/mechanic-dashboard" : "/dashboard";
+    console.log(`Navegando para: ${targetRoute}`);
+    navigate(targetRoute);
+
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao criar conta.";
     setError(errorMessage);
