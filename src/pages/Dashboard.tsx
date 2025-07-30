@@ -157,12 +157,48 @@ const Dashboard = () => {
 
   const checkSubscription = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke("check-subscription");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.rpc('check_user_limits', {
+        user_id_param: session.user.id,
+        tipo_limite: 'geral'
+      });
+
       if (error) throw error;
-      setSubscription(data as Subscription);
+      
+      // Mapear dados para o formato esperado
+      const mappedSubscription: Subscription = {
+        id: session.user.id,
+        user_id: session.user.id,
+        subscription_tier: data.plano === 'gratuito' ? 'Gratis' : data.plano === 'basico' ? 'Basico' : 'Premium',
+        subscribed: data.status === 'ativa',
+        subscription_end: undefined
+      };
+      
+      setSubscription(mappedSubscription);
     } catch (err) {
       console.error("Error checking subscription:", err);
-      toast({ title: "Erro", description: "Não foi possível verificar a assinatura.", variant: "destructive" });
+      // Criar assinatura gratuita se não existir
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { error: createError } = await supabase
+          .from("user_subscriptions")
+          .insert({
+            user_id: session.user.id,
+            plan_type: "gratuito",
+            status: "ativa",
+            max_vehicles: 1,
+            max_requests: 3,
+            vehicles_used: 0,
+            requests_used: 0,
+          });
+
+        if (!createError) {
+          // Tentar novamente após criar
+          checkSubscription();
+        }
+      }
     }
   };
 
