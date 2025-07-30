@@ -18,9 +18,8 @@ import { Database } from "@/integrations/supabase/types";
 type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
-// A linha abaixo foi mantida se você precisar tipar diretamente dados vindos
-// da tabela `subscribers` em algum outro ponto do app.
-type SubscriberRow = Database["public"]["Tables"]["subscribers"]["Row"];
+// Removida a referência à tabela subscribers que não existe
+// type SubscriberRow = Database["public"]["Tables"]["subscribers"]["Row"];
 
 type VehicleRequest = Database["public"]["Tables"]["solicitacoes"]["Row"];
 

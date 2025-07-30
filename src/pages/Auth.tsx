@@ -37,101 +37,183 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-
-const handleSignUp = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setError("");
-
-  if (!nome || !sobrenome || !email || !password) {
-    setError("Por favor, preencha todos os campos obrigatórios.");
-    setLoading(false);
-    return;
-  }
-
-  if (password.length < 6) {
-    setError("A senha deve ter pelo menos 6 caracteres.");
-    setLoading(false);
-    return;
-  }
-
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
-    setError("Por favor, insira um email válido.");
-    setLoading(false);
-    return;
-  }
-
-  try {
-    // Cadastro do usuário
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          nome,
-          sobrenome,
-          telefone,
-          cpf_cnpj: cpfCnpj,
-          cep,
-          endereco,
-          cidade,
-          estado,
-          conta: userType === "cliente" ? "Cliente" : "Mecanico",
-        },
-      },
-    });
-
-    if (signUpError) throw new Error(`Erro no cadastro: ${signUpError.message}`);
-
-    // Login automático após cadastro
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) throw new Error(`Erro no login: ${signInError.message}`);
-
-    // Verifica a sessão
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData.session) {
-      throw new Error("Não foi possível obter a sessão após o login.");
+    // Validações básicas
+    if (!nome || !sobrenome || !email || !password) {
+      setError("Por favor, preencha todos os campos obrigatórios.");
+      setLoading(false);
+      return;
     }
 
-    toast({
-      title: "Conta criada com sucesso!",
-      description: "Bem-vindo ao SOS Mecânicos!",
-    });
+    if (password.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      setLoading(false);
+      return;
+    }
 
-    navigate(userType === "mecanico" ? "/mechanic-dashboard" : "/dashboard");
-  } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao criar conta.";
-    setError(errorMessage);
-    console.error("Erro no signup:", errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setError("Por favor, insira um email válido.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      console.log("Iniciando cadastro do usuário...");
+      
+      // Dados do usuário para metadata
+      const userData = {
+        nome: nome.trim(),
+        sobrenome: sobrenome.trim(),
+        telefone: telefone.trim(),
+        cpf_cnpj: cpfCnpj.trim(),
+        cep: cep.trim(),
+        endereco: endereco.trim(),
+        cidade: cidade.trim(),
+        estado: estado.trim(),
+        conta: userType === "cliente" ? "Cliente" : "Mecanico",
+      };
+
+      console.log("Dados do usuário:", userData);
+
+      // 1. Cadastro do usuário no Supabase Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: userData,
+        },
+      });
+
+      if (signUpError) {
+        console.error("Erro no signUp:", signUpError);
+        throw new Error(`Erro no cadastro: ${signUpError.message}`);
+      }
+
+      if (!signUpData.user) {
+        throw new Error("Usuário não foi criado corretamente.");
+      }
+
+      console.log("Usuário criado com sucesso:", signUpData.user.id);
+
+      // 2. Verificar se o perfil foi criado automaticamente pelo trigger
+      let retryCount = 0;
+      const maxRetries = 5;
+      let profileExists = false;
+
+      while (retryCount < maxRetries && !profileExists) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1 segundo
+        
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", signUpData.user.id)
+          .single();
+
+        if (profile && !profileError) {
+          profileExists = true;
+          console.log("Perfil encontrado:", profile);
+        } else {
+          console.log(`Tentativa ${retryCount + 1}: Perfil ainda não encontrado`);
+          retryCount++;
+        }
+      }
+
+      // 3. Se o perfil não foi criado automaticamente, criar manualmente
+      if (!profileExists) {
+        console.log("Tentando criar perfil manualmente...");
+        
+        const { error: profileInsertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: signUpData.user.id,
+            email: email.trim(),
+            nome: nome.trim(),
+            sobrenome: sobrenome.trim(),
+            telefone: telefone.trim(),
+            "cpf/cnpj": cpfCnpj.trim(),
+            cep: cep.trim(),
+            endereco: endereco.trim(),
+            cidade: cidade.trim(),
+            estado: estado.trim(),
+            conta: userType === "cliente" ? "Cliente" : "Mecanico",
+          });
+
+        if (profileInsertError) {
+          console.error("Erro ao criar perfil manualmente:", profileInsertError);
+          // Não falha aqui, pois o usuário já foi criado
+        } else {
+          console.log("Perfil criado manualmente com sucesso");
+        }
+      }
+
+      // 4. Fazer login automático
+      console.log("Fazendo login automático...");
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (signInError) {
+        console.error("Erro no login automático:", signInError);
+        // Se o login automático falhar, ainda mostra sucesso mas pede para fazer login
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Faça login para acessar sua conta.",
+        });
+        return;
+      }
+
+      if (!signInData.session) {
+        throw new Error("Não foi possível obter a sessão após o login.");
+      }
+
+      console.log("Login automático realizado com sucesso");
+
+      // 5. Sucesso total
+      toast({
+        title: "Conta criada com sucesso!",
+        description: "Bem-vindo ao SOS Mecânicos!",
+      });
+
+      // Navegar para o dashboard apropriado
+      if (userType === "mecanico") {
+        navigate("/mechanic-dashboard");
+      } else {
+        navigate("/dashboard");
+      }
+
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao criar conta.";
+      console.error("Erro completo no signup:", err);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password,
       });
 
       if (error) throw error;
 
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session) {
+      if (data.session) {
+        // Buscar o tipo de conta do usuário
         const { data: profile } = await supabase
           .from("profiles")
           .select("conta")
-          .eq("id", session.user.id)
+          .eq("id", data.session.user.id)
           .single();
 
         if (profile?.conta === "Mecanico") {
@@ -281,8 +363,9 @@ const handleSignUp = async (e: React.FormEvent) => {
                       />
                     </div>
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">Email *</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -293,6 +376,23 @@ const handleSignUp = async (e: React.FormEvent) => {
                         onChange={(e) => setEmail(e.target.value)}
                         className="pl-10"
                         required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Senha *</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="Mínimo 6 caracteres"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10"
+                        required
+                        minLength={6}
                       />
                     </div>
                   </div>
@@ -370,22 +470,6 @@ const handleSignUp = async (e: React.FormEvent) => {
                       value={estado}
                       onChange={(e) => setEstado(e.target.value)}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Senha</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Mínimo 6 caracteres"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10"
-                        required
-                        minLength={6}
-                      />
-                    </div>
                   </div>
 
                   {error && (

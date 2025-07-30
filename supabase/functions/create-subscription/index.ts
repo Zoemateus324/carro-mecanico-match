@@ -10,9 +10,14 @@ serve(async (req) => {
 
   const { userId, email } = await req.json();
 
+  // Atualizar o perfil do usuário em vez de criar um subscriber
   const { error } = await supabase
-    .from("subscribers")
-    .insert([{ user_id: userId, email, plano: "gratuito", status: "ativa" }]);
+    .from("profiles")
+    .update({ 
+      plano_id: "gratuito", // ou o ID do plano correspondente
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", userId);
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
