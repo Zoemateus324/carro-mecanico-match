@@ -336,10 +336,10 @@ const Dashboard = () => {
                     <Card key={vehicle.id} className="relative">
                       <CardContent className="pt-6 space-y-2">
                         <div className="flex justify-between">
-                          <h3 className="font-semibold text-lg">{vehicle.marca} {vehicle.modelo}</h3>
-                          <span className="text-muted-foreground text-sm">Ano: {vehicle.ano}</span>
+                          <h3 className="font-semibold text-lg">{vehicle.model} {vehicle.modelo}</h3>
+                          <span className="text-muted-foreground text-sm">Ano: {vehicle.year}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground">Placa: {vehicle.placa}</p>
+                        <p className="text-sm text-muted-foreground">Placa: {vehicle.plate}</p>
                         <div className="flex gap-2 mt-4">
                           <Button variant="outline" size="sm" onClick={() => navigate(`/vehicles/edit/${vehicle.id}`)}>
                             Editar
