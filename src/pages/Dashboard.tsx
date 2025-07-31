@@ -124,7 +124,7 @@ const Dashboard = () => {
     try {
       const { data, error } = await supabase
         .from("solicitacoes")
-        .select("id, usuario, veiculo, tipo_servico, descricao_solicitacao, ServiceStatus, created_at")
+        .select("*")
         .eq("usuario", userId);
 
       if (error) throw new Error(error.message);
@@ -140,67 +140,25 @@ const Dashboard = () => {
     }
   };
 
-  const fetchVehicles = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("vehicles")
-        .select("*")
-        .eq("user_id", userId);
+ 
 
-      if (error) throw error;
-      setVehicles(data ?? []);
-    } catch (err) {
-      console.error("Erro ao buscar veículos:", err);
-      toast({ title: "Erro", description: "Não foi possível carregar os veículos.", variant: "destructive" });
-    }
-  };
 
-  const checkSubscription = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+ const fetchVehicles = useCallback(async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("vehicles")
+      .select("*")
+      .eq("user_id", userId);
 
-      const { data, error } = await supabase.rpc('check_user_limits', {
-        user_id_param: session.user.id,
-        tipo_limite: 'geral'
-      });
+    if (error) throw error;
+    setVehicles(data ?? []);
+  } catch (err) {
+    console.error("Erro ao buscar veículos:", err);
+    toast({ title: "Erro", description: "Não foi possível carregar os veículos.", variant: "destructive" });
+  }
+}, [toast]); 
 
-      if (error) throw error;
-      
-      // Mapear dados para o formato esperado
-      const mappedSubscription: Subscription = {
-        id: session.user.id,
-        user_id: session.user.id,
-        subscription_tier: data.plano === 'gratuito' ? 'Gratis' : data.plano === 'basico' ? 'Basico' : 'Premium',
-        subscribed: data.status === 'ativa',
-        subscription_end: undefined
-      };
-      
-      setSubscription(mappedSubscription);
-    } catch (err) {
-      console.error("Error checking subscription:", err);
-      // Criar assinatura gratuita se não existir
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { error: createError } = await supabase
-          .from("user_subscriptions")
-          .insert({
-            user_id: session.user.id,
-            plan_type: "gratuito",
-            status: "ativa",
-            max_vehicles: 1,
-            max_requests: 3,
-            vehicles_used: 0,
-            requests_used: 0,
-          });
-
-        if (!createError) {
-          // Tentar novamente após criar
-          checkSubscription();
-        }
-      }
-    }
-  };
+  
 
   const checkUser = useCallback(async () => {
     try {
@@ -231,7 +189,7 @@ const Dashboard = () => {
       }
 
       await Promise.all([
-        checkSubscription(),
+      
         fetchVehicles(session.user.id),
         fetchSolicitacoes(session.user.id),
       ]);
