@@ -28,6 +28,17 @@ interface UserProfile {
   updated_at: string;
 }
 
+interface Vehicles{
+id:string;
+modelo:string;
+plate:string;
+year:string;
+color:string;
+user_id:string;
+
+}
+
+
 interface Subscription {
   id: string;
   user_id: string;
