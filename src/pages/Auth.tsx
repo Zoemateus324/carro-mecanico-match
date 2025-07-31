@@ -42,7 +42,7 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
-<<<<<<< HEAD
+
     // Validações básicas
     if (!nome || !sobrenome || !email || !password) {
       setError("Por favor, preencha todos os campos obrigatórios.");
@@ -196,7 +196,7 @@ const Auth = () => {
     }
   };
 
-=======
+
 
 const handleSignUp = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -349,7 +349,7 @@ const handleSignUp = async (e: React.FormEvent) => {
     setLoading(false);
   }
 };
->>>>>>> 84af4169ce5181384cd632eb7d79a3884fcb581a
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
