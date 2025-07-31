@@ -169,6 +169,36 @@ export type Database = {
           },
         ]
       }
+      solicitacoes: {
+        Row: {
+          created_at: string | null
+          descricao_solicitacao: string | null
+          id: string
+          servicestatus: string | null
+          tipo_servico: string | null
+          usuario: string | null
+          veiculo: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao_solicitacao?: string | null
+          id?: string
+          servicestatus?: string | null
+          tipo_servico?: string | null
+          usuario?: string | null
+          veiculo?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao_solicitacao?: string | null
+          id?: string
+          servicestatus?: string | null
+          tipo_servico?: string | null
+          usuario?: string | null
+          veiculo?: string | null
+        }
+        Relationships: []
+      }
       stripe_customers: {
         Row: {
           created_at: string | null
@@ -488,7 +518,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      check_user_limits: {
+        Args: { tipo_limite: string; user_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       member_status: "active" | "inactive"
