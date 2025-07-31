@@ -17,10 +17,6 @@ import { Database } from "@/integrations/supabase/types";
 
 type VehicleRow = Database["public"]["Tables"]["vehicles"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
-
-// Removida a referência à tabela subscribers que não existe
-// type SubscriberRow = Database["public"]["Tables"]["subscribers"]["Row"];
-
 type VehicleRequest = Database["public"]["Tables"]["solicitacoes"]["Row"];
 
 interface UserProfile {
@@ -63,9 +59,9 @@ const getCurrentPlan = (subscription: Subscription | null): CurrentPlan | null =
   if (!subscription) return null;
 
   const plans: Record<Subscription["subscription_tier"], CurrentPlan> = {
-    Gratis: { name: "Grátis",  maxVehicles: 1,  maxRequests: 3 },
-    Basico: { name: "Básico",  maxVehicles: 5,  maxRequests: 15 },
-    Premium:{ name: "Premium", maxVehicles: Infinity, maxRequests: Infinity },
+    Gratis: { name: "Grátis", maxVehicles: 1, maxRequests: 3 },
+    Basico: { name: "Básico", maxVehicles: 5, maxRequests: 15 },
+    Premium: { name: "Premium", maxVehicles: Infinity, maxRequests: Infinity },
   };
 
   return plans[subscription.subscription_tier];
@@ -92,10 +88,10 @@ const getPlanColor = (plan: Subscription["subscription_tier"] | string) => {
 
 const Dashboard = () => {
   /** ------------------------------------------------------------------ STATE */
-  const [user, setUser]                 = useState<User | null>(null);
-  const [profile, setProfile]           = useState<ProfileRow | null>(null);
-  const [loading, setLoading]           = useState(true);
-  const [vehicles, setVehicles]         = useState<Partial<VehicleRow>[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [vehicles, setVehicles] = useState<Partial<VehicleRow>[]>([]);
   const [solicitacoes, setSolicitacoes] = useState<VehicleRequest[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
 
@@ -106,21 +102,21 @@ const Dashboard = () => {
   /** ---------------------------------------------------- BUSINESS LOGIC */
   const checkUserLimits = useCallback(() => {
     const tier = subscription?.subscription_tier ?? "Gratis";
-    const maxVehicles   = tier === "Premium" ? Infinity : tier === "Basico" ? 5  : 1;
-    const maxRequests   = tier === "Premium" ? Infinity : tier === "Basico" ? 15 : 3;
+    const maxVehicles = tier === "Premium" ? Infinity : tier === "Basico" ? 5 : 1;
+    const maxRequests = tier === "Premium" ? Infinity : tier === "Basico" ? 15 : 3;
 
     return {
       tier,
       maxVehicles,
       maxRequests,
-      vehiclesUsed:      vehicles.length,
-      requestsUsed:      solicitacoes.length,
-      canAddVehicle:     vehicles.length     < maxVehicles,
-      canAddRequest:     solicitacoes.length < maxRequests,
+      vehiclesUsed: vehicles.length,
+      requestsUsed: solicitacoes.length,
+      canAddVehicle: vehicles.length < maxVehicles,
+      canAddRequest: solicitacoes.length < maxRequests,
     };
   }, [subscription, vehicles, solicitacoes]);
 
-  const fetchSolicitacoes = async (userId: string) => {
+  const fetchSolicitacoes = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from("solicitacoes")
@@ -138,27 +134,22 @@ const Dashboard = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
- 
+  const fetchVehicles = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("*")
+        .eq("user_id", userId);
 
-
- const fetchVehicles = useCallback(async (userId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from("vehicles")
-      .select("*")
-      .eq("user_id", userId);
-
-    if (error) throw error;
-    setVehicles(data ?? []);
-  } catch (err) {
-    console.error("Erro ao buscar veículos:", err);
-    toast({ title: "Erro", description: "Não foi possível carregar os veículos.", variant: "destructive" });
-  }
-}, [toast]); 
-
-  
+      if (error) throw error;
+      setVehicles(data ?? []);
+    } catch (err) {
+      console.error("Erro ao buscar veículos:", err);
+      toast({ title: "Erro", description: "Não foi possível carregar os veículos.", variant: "destructive" });
+    }
+  }, [toast]);
 
   const checkUser = useCallback(async () => {
     try {
@@ -175,7 +166,26 @@ const Dashboard = () => {
         .eq("id", session.user.id)
         .single();
 
-      setProfile(profileData);
+      if (!profileData) {
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: session.user.id,
+            nome: session.user.email?.split('@')[0] || "Usuário",
+            conta: "Cliente",
+            user_type: "Gratis"
+          });
+        if (insertError) throw insertError;
+        const { data: newProfileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
+        setProfile(newProfileData);
+      } else {
+        setProfile(profileData);
+      }
+
       setUser({
         id: session.user.id,
         name: profileData?.nome ?? "",
@@ -188,8 +198,14 @@ const Dashboard = () => {
         return;
       }
 
+      const { data: subscriptionData } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .single();
+      setSubscription(subscriptionData ?? null);
+
       await Promise.all([
-      
         fetchVehicles(session.user.id),
         fetchSolicitacoes(session.user.id),
       ]);
@@ -199,13 +215,13 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [navigate, fetchVehicles, fetchSolicitacoes, toast]);
+  }, [navigate, toast, fetchVehicles, fetchSolicitacoes]); // Adicionadas as dependências
 
   /** ----------------------------------------------------------- EFFECTS */
   useEffect(() => {
     checkUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    
+  }, [checkUser]);
 
   /** -------------------------------------------------------------- EVENTS */
   const handleUpgrade = async (plan: "basico" | "premium") => {
@@ -247,7 +263,7 @@ const Dashboard = () => {
   }
 
   const currentPlan = getCurrentPlan(subscription);
-  const planLimits  = checkUserLimits();
+  const planLimits = checkUserLimits();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/50 to-background">
@@ -289,12 +305,16 @@ const Dashboard = () => {
             <TabsContent value="vehicles" className="space-y-4">
               <div className="flex justify-between">
                 <h2 className="text-2xl font-bold">Meus Veículos</h2>
-                <Button onClick={() => navigate("/vehicles/add")}> <Plus className="h-4 w-4 mr-2" /> Adicionar Veículo </Button>
+                <Button onClick={() => navigate("/vehicles/add")}>
+                  <Plus className="h-4 w-4 mr-2" /> Adicionar Veículo
+                </Button>
               </div>
 
               <Card>
                 <CardContent>
-                  <p className="text-sm">Veículos: {vehicles.length}/{planLimits.maxVehicles === Infinity ? "∞" : planLimits.maxVehicles}</p>
+                  <p className="text-sm">
+                    Veículos: {vehicles.length}/{planLimits.maxVehicles === Infinity ? "∞" : planLimits.maxVehicles}
+                  </p>
                   <div className="w-full bg-muted rounded-full h-2">
                     <div
                       className="bg-primary h-2 rounded-full"
@@ -305,7 +325,11 @@ const Dashboard = () => {
               </Card>
 
               {vehicles.length === 0 ? (
-                <Card><CardContent><p className="text-center text-muted">Nenhum veículo cadastrado ainda.</p></CardContent></Card>
+                <Card>
+                  <CardContent>
+                    <p className="text-center text-muted">Nenhum veículo cadastrado ainda.</p>
+                  </CardContent>
+                </Card>
               ) : (
                 <div className="grid md:grid-cols-2 gap-4">
                   {vehicles.map((vehicle) => (
@@ -317,11 +341,17 @@ const Dashboard = () => {
                         </div>
                         <p className="text-sm text-muted-foreground">Placa: {vehicle.placa}</p>
                         <div className="flex gap-2 mt-4">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/vehicles/edit/${vehicle.id}`)}>Editar</Button>
-                          <Button variant="destructive" size="sm" onClick={() => handleDeleteVehicle(vehicle.id as number)}>Excluir</Button>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/vehicles/edit/${vehicle.id}`)}>
+                            Editar
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleDeleteVehicle(vehicle.id as number)}>
+                            Excluir
+                          </Button>
                         </div>
                       </CardContent>
-                      <div className="absolute top-2 right-2 text-muted-foreground"><Car className="h-5 w-5" /></div>
+                      <div className="absolute top-2 right-2 text-muted-foreground">
+                        <Car className="h-5 w-5" />
+                      </div>
                     </Card>
                   ))}
                 </div>
@@ -332,11 +362,15 @@ const Dashboard = () => {
             <TabsContent value="requests" className="space-y-4">
               <div className="flex justify-between">
                 <h2 className="text-2xl font-bold">Minhas Solicitações</h2>
-                <Button onClick={() => navigate("/vehicles/requests")}> <Plus className="h-4 w-4 mr-2" /> Solicitar Serviço </Button>
+                <Button onClick={() => navigate("/vehicles/requests")}>
+                  <Plus className="h-4 w-4 mr-2" /> Solicitar Serviço
+                </Button>
               </div>
 
               <Card className="bg-gradient-card shadow-elegant border-0">
-                <CardHeader><CardTitle className="text-center">Solicitações Recentes</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-center">Solicitações Recentes</CardTitle>
+                </CardHeader>
                 <CardContent>
                   {solicitacoes.length === 0 ? (
                     <p className="text-center text-foreground">Nenhuma solicitação feita ainda.</p>
@@ -349,7 +383,13 @@ const Dashboard = () => {
                               <h3 className="font-semibold">{request.tipo_servico}</h3>
                               <p className="text-sm text-muted-foreground">Status: {request.ServiceStatus}</p>
                             </div>
-                            <Button variant="outline" size="sm" onClick={() => navigate(`/vehicles/request/${request.id}`)}>Ver Detalhes</Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/vehicles/request/${request.id}`)}
+                            >
+                              Ver Detalhes
+                            </Button>
                           </div>
                         </li>
                       ))}
@@ -362,7 +402,9 @@ const Dashboard = () => {
             {/* ------------------------------------------------ TAB: PROFILE */}
             <TabsContent value="profile" className="space-y-4">
               <div className="flex items-center space-x-4">
-                <div className="p-2 bg-gradient-primary rounded-lg"><Crown className="h-6 w-6 text-primary-foreground" /></div>
+                <div className="p-2 bg-gradient-primary rounded-lg">
+                  <Crown className="h-6 w-6 text-primary-foreground" />
+                </div>
                 <div>
                   <h2 className="text-2xl font-bold">Meu Perfil</h2>
                   <p className="text-sm text-muted-foreground">Gerencie suas informações e preferências</p>
@@ -370,9 +412,13 @@ const Dashboard = () => {
               </div>
 
               <Card>
-                <CardHeader><CardTitle>Configurações do Perfil</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle>Configurações do Perfil</CardTitle>
+                </CardHeader>
                 <CardContent>
-                  <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>Editar Perfil</Button>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+                    Editar Perfil
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -392,7 +438,9 @@ const Dashboard = () => {
         {/* ----------------------------------------------------------- SIDEBAR */}
         <div className="space-y-4">
           <Card>
-            <CardHeader className="flex items-center"><Crown className="mr-2" /> <CardTitle>Plano Atual</CardTitle></CardHeader>
+            <CardHeader className="flex items-center">
+              <Crown className="mr-2" /> <CardTitle>Plano Atual</CardTitle>
+            </CardHeader>
             <CardContent>
               {currentPlan && subscription && (
                 <>
@@ -406,7 +454,9 @@ const Dashboard = () => {
                     <p className="text-sm mb-2">Renovação: {new Date(subscription.subscription_end).toLocaleDateString()}</p>
                   )}
                   {subscription.subscribed && (
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => supabase.functions.invoke("customer-portal")}>Gerenciar Assinatura</Button>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => supabase.functions.invoke("customer-portal")}>
+                      Gerenciar Assinatura
+                    </Button>
                   )}
                 </>
               )}
@@ -415,32 +465,59 @@ const Dashboard = () => {
 
           {/* ------------------------------------------------ AVAILABLE PLANS */}
           <Card>
-            <CardHeader><CardTitle>Planos Disponíveis</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Planos Disponíveis</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               {/* ------------------------------ GRATIS */}
               <div className="p-3 border rounded-lg space-y-1">
-                <div className="flex items-center justify-between mb-2"><h4 className="font-medium">Grátis</h4><span className="text-sm font-bold">R$ 0/mês</span></div>
-                <p className="flex items-center text-sm text-muted-foreground"><CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 1 veículo</p>
-                <p className="flex items-center text-sm text-muted-foreground"><CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 3 solicitações/mês</p>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Grátis</h4>
+                  <span className="text-sm font-bold">R$ 0/mês</span>
+                </div>
+                <p className="flex items-center text-sm text-muted-foreground">
+                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 1 veículo
+                </p>
+                <p className="flex items-center text-sm text-muted-foreground">
+                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 3 solicitações/mês
+                </p>
               </div>
 
               {/* ------------------------------ BASICO */}
               <div className="p-3 border rounded-lg space-y-1">
-                <div className="flex items-center justify-between mb-2"><h4 className="font-medium">Básico</h4><span className="text-sm font-bold">R$ 19,90/mês</span></div>
-                <p className="flex items-center text-sm text-muted-foreground"><CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 5 veículos</p>
-                <p className="flex items-center text-sm text-muted-foreground mb-3"><CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 15 solicitações/mês</p>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Básico</h4>
+                  <span className="text-sm font-bold">R$ 19,90/mês</span>
+                </div>
+                <p className="flex items-center text-sm text-muted-foreground">
+                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 5 veículos
+                </p>
+                <p className="flex items-center text-sm text-muted-foreground mb-3">
+                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 15 solicitações/mês
+                </p>
                 {(!subscription?.subscribed || subscription.subscription_tier === "Gratis") && (
-                  <Button size="sm" className="w-full" onClick={() => handleUpgrade("basico")}>Assinar</Button>
+                  <Button size="sm" className="w-full" onClick={() => handleUpgrade("basico")}>
+                    Assinar
+                  </Button>
                 )}
               </div>
 
               {/* ------------------------------ PREMIUM */}
               <div className="p-3 border rounded-lg space-y-1">
-                <div className="flex items-center justify-between mb-2"><h4 className="font-medium">Premium</h4><span className="text-sm font-bold">R$ 49,90/mês</span></div>
-                <p className="flex items-center text-sm text-muted-foreground"><CheckCircle className="h-3 w-3 mr-1 text-green-500" /> Veículos ilimitados</p>
-                <p className="flex items-center text-sm text-muted-foreground mb-3"><CheckCircle className="h-3 w-3 mr-1 text-green-500" /> Solicitações ilimitadas</p>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Premium</h4>
+                  <span className="text-sm font-bold">R$ 49,90/mês</span>
+                </div>
+                <p className="flex items-center text-sm text-muted-foreground">
+                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> Veículos ilimitados
+                </p>
+                <p className="flex items-center text-sm text-muted-foreground mb-3">
+                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> Solicitações ilimitadas
+                </p>
                 {(!subscription?.subscribed || subscription.subscription_tier !== "Premium") && (
-                  <Button size="sm" className="w-full" onClick={() => handleUpgrade("premium")}>Assinar</Button>
+                  <Button size="sm" className="w-full" onClick={() => handleUpgrade("premium")}>
+                    Assinar
+                  </Button>
                 )}
               </div>
             </CardContent>

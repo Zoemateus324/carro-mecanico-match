@@ -129,6 +129,30 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          subscription_tier: "Gratis" | "Basico" | "Premium";
+          subscribed: boolean;
+          subscription_end?: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          subscription_tier: "Gratis" | "Basico" | "Premium";
+          subscribed?: boolean;
+          subscription_end?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          subscription_tier?: "Gratis" | "Basico" | "Premium";
+          subscribed?: boolean;
+          subscription_end?: string;
+        };
+        Relationships: [];
+      };
    
       subscribers: {
         Row: {
