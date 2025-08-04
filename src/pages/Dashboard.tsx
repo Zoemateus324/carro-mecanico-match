@@ -28,13 +28,13 @@ interface UserProfile {
   updated_at: string;
 }
 
-interface Vehicles{
-id:string;
-modelo:string;
-plate:string;
-year:string;
-color:string;
-user_id:string;
+interface Vehicle {
+  id: string;
+  modelo: string;
+  plate: string;
+  year: string;
+  color: string;
+  user_id:string;
 
 }
 
@@ -337,10 +337,10 @@ const Dashboard = () => {
                     <Card key={vehicle.id} className="relative">
                       <CardContent className="pt-6 space-y-2">
                         <div className="flex justify-between">
-                          <h3 className="font-semibold text-lg">{vehicle.model} {vehicle.modelo}</h3>
-                          <span className="text-muted-foreground text-sm">Ano: {vehicle.year}</span>
+                          <h3 className="font-semibold text-lg">{vehicle.modelo} {vehicle.marca}</h3>
+                          <span className="text-muted-foreground text-sm">Ano: {vehicle.ano}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground">Placa: {vehicle.plate}</p>
+                        <p className="text-sm text-muted-foreground">Placa: {vehicle.placa}</p>
                         <div className="flex gap-2 mt-4">
                           <Button variant="outline" size="sm" onClick={() => navigate(`/vehicles/edit/${vehicle.id}`)}>
                             Editar
