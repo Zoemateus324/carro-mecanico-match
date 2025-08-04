@@ -68,9 +68,7 @@ const VehicleAdd = () => {
       setCanAddVehicle(data.pode_adicionar_veiculo);
       setFormData(prev => ({ ...prev, user_id: session.user.id }));
 
-      if (!data.pode_adicionar_veiculo) {
-        setError(`Limite atingido: ${data.max_veiculos} veículo(s) permitidos.`);
-      }
+     
     } catch (err) {
       console.error(err);
       setError("Erro ao verificar limites.");
