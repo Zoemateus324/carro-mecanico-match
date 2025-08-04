@@ -223,17 +223,7 @@ const Dashboard = () => {
     
   }, [checkUser]);
 
-  /** -------------------------------------------------------------- EVENTS */
-  const handleUpgrade = async (plan: "basico" | "premium") => {
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", { body: { plan } });
-      if (error) throw error;
-      window.open(data.url, "_blank");
-    } catch (err) {
-      toast({ title: "Erro", description: "Erro ao iniciar upgrade de plano.", variant: "destructive" });
-    }
-  };
-
+  
   const handleDeleteVehicle = async (id: number) => {
     if (!window.confirm("Deseja excluir este veículo?")) return;
 
@@ -463,65 +453,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* ------------------------------------------------ AVAILABLE PLANS */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Planos Disponíveis</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* ------------------------------ GRATIS */}
-              <div className="p-3 border rounded-lg space-y-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Grátis</h4>
-                  <span className="text-sm font-bold">R$ 0/mês</span>
-                </div>
-                <p className="flex items-center text-sm text-muted-foreground">
-                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 1 veículo
-                </p>
-                <p className="flex items-center text-sm text-muted-foreground">
-                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 3 solicitações/mês
-                </p>
-              </div>
-
-              {/* ------------------------------ BASICO */}
-              <div className="p-3 border rounded-lg space-y-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Básico</h4>
-                  <span className="text-sm font-bold">R$ 19,90/mês</span>
-                </div>
-                <p className="flex items-center text-sm text-muted-foreground">
-                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 5 veículos
-                </p>
-                <p className="flex items-center text-sm text-muted-foreground mb-3">
-                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> 15 solicitações/mês
-                </p>
-                {(!subscription?.subscribed || subscription.subscription_tier === "Gratis") && (
-                  <Button size="sm" className="w-full" onClick={() => handleUpgrade("basico")}>
-                    Assinar
-                  </Button>
-                )}
-              </div>
-
-              {/* ------------------------------ PREMIUM */}
-              <div className="p-3 border rounded-lg space-y-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Premium</h4>
-                  <span className="text-sm font-bold">R$ 49,90/mês</span>
-                </div>
-                <p className="flex items-center text-sm text-muted-foreground">
-                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> Veículos ilimitados
-                </p>
-                <p className="flex items-center text-sm text-muted-foreground mb-3">
-                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" /> Solicitações ilimitadas
-                </p>
-                {(!subscription?.subscribed || subscription.subscription_tier !== "Premium") && (
-                  <Button size="sm" className="w-full" onClick={() => handleUpgrade("premium")}>
-                    Assinar
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+        
         </div>
       </div>
     </div>
