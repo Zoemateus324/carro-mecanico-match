@@ -28,15 +28,35 @@ export const useSubscription = () => {
       }
 
       const { data, error: fetchError } = await supabase
-        .from('stripe_user_subscriptions')
+        .from('subscriptions')
         .select('*')
+        .eq('user_id', session.user.id)
         .maybeSingle();
 
       if (fetchError) {
         throw fetchError;
       }
 
-      setSubscription(data);
+      // Se não há dados de subscription, criar um objeto padrão
+      if (!data) {
+        setSubscription({
+          subscription_status: 'inactive',
+          price_id: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          payment_method_brand: null,
+          payment_method_last4: null
+        });
+      } else {
+        setSubscription({
+          subscription_status: data.subscription_tier || 'inactive',
+          price_id: null,
+          current_period_end: null,
+          cancel_at_period_end: false,
+          payment_method_brand: null,
+          payment_method_last4: null
+        });
+      }
     } catch (err) {
       console.error('Error fetching subscription:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch subscription');

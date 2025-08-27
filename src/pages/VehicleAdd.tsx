@@ -53,19 +53,9 @@ const VehicleAdd = () => {
         return;
       }
 
-      // Verificar limites reais usando a função do banco
-      const { data, error } = await supabase.rpc('check_user_limits', {
-        user_id_param: session.user.id,
-        tipo_limite: 'veiculo'
-      });
-
-      if (error) {
-        console.error("Erro ao verificar limites:", error);
-        setError("Erro ao verificar limites do plano.");
-        return;
-      }
-
-      setCanAddVehicle(data.pode_adicionar_veiculo);
+      // Por enquanto, permitir adicionar veículo se o usuário estiver logado
+      // TODO: Implementar verificação de plano quando a estrutura estiver definida
+      setCanAddVehicle(true);
       setFormData(prev => ({ ...prev, user_id: session.user.id }));
 
      
@@ -108,15 +98,7 @@ const VehicleAdd = () => {
       const { error } = await supabase.from("vehicles").insert(vehicleData);
       if (error) throw error;
 
-      // Atualizar contador de veículos usados
-      await supabase
-        .from("user_subscriptions")
-        .update({ 
-          vehicles_used: supabase.sql`vehicles_used + 1`,
-          updated_at: new Date().toISOString()
-        })
-        .eq("user_id", formData.user_id);
-
+      // Registro do veículo salvo com sucesso
       toast({
         title: "Veículo registrado",
         description: "Cadastro realizado com sucesso!"

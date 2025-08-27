@@ -22,8 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 interface Solicitacao {
   id: number;
   usuario: string;
-  'tipo-servico': string;
-  'descricao-solicitacao': string;
+  'tipo_servico': string; // Corresponde ao schema do banco
+  'descricao_solicitacao': string; // Corresponde ao schema do banco
   ServiceStatus: string;
   created_at: string;
   veiculo: number;
@@ -268,7 +268,7 @@ const MechanicDashboard = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <p className="text-sm text-muted-foreground">Tipo de Serviço:</p>
-                            <p className="font-medium">{solicitacao['tipo-servico']}</p>
+                            <p className="font-medium">{solicitacao['tipo_servico']}</p>
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Veículo ID:</p>
@@ -278,7 +278,7 @@ const MechanicDashboard = () => {
 
                         <div>
                           <p className="text-sm text-muted-foreground">Descrição:</p>
-                          <p className="text-sm">{solicitacao['descricao-solicitacao']}</p>
+                          <p className="text-sm">{solicitacao['descricao_solicitacao']}</p>
                         </div>
 
                         <div className="flex items-center space-x-2 text-sm text-muted-foreground">

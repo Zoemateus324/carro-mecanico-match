@@ -49,24 +49,9 @@ const VehicleRequests = () => {
 
         setVehicles(vehiclesData || []);
 
-        // Verificar limites reais usando a função do banco
-        const { data, error } = await supabase.rpc('check_user_limits', {
-          user_id_param: session.user.id,
-          tipo_limite: 'solicitacao'
-        });
-
-        if (error) {
-          console.error("Erro ao verificar limites:", error);
-          setError("Erro ao verificar limites do plano.");
-          return;
-        }
-        
-        if (!data.pode_fazer_solicitacao) {
-          setError(`Limite de solicitações atingido. Seu plano permite apenas ${data.max_solicitacoes} solicitação(ões) por mês.`);
-          setCanMakeRequest(false);
-        } else {
-          setCanMakeRequest(true);
-        }
+        // Por enquanto, permitir fazer solicitações se o usuário estiver logado
+        // TODO: Implementar verificação de plano quando a estrutura estiver definida
+        setCanMakeRequest(true);
       } catch (error) {
         console.error("Error checking limits:", error);
         setError("Erro ao verificar limites do plano");
@@ -130,26 +115,6 @@ if (error) {
   });
   return;
 }
-
-
-      if (error) throw error;
-
-      // Atualizar contador de solicitações usadas
-      const { error: updateError } = await supabase.rpc('check_user_limits', {
-        user_id_param: session.user.id,
-        tipo_limite: 'solicitacao'
-      });
-
-      if (!updateError) {
-        // Incrementar contador de solicitações
-        await supabase
-          .from("user_subscriptions")
-          .update({ 
-            requests_used: supabase.sql`requests_used + 1`,
-            updated_at: new Date().toISOString()
-          })
-          .eq("user_id", session.user.id);
-      }
 
       toast({
         title: "Sucesso!",
