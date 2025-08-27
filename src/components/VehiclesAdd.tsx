@@ -1,12 +1,7 @@
-export defacult function VehiclesAdd(){
-
-return(
-<div>
-<h1>
-components vehicles add
-</h1>
-</div>
-
-)
-
+export default function VehiclesAdd() {
+  return (
+    <div>
+      <h1>Adicionar Veículo</h1>
+    </div>
+  );
 }
